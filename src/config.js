@@ -35,7 +35,13 @@ if (GROQ_KEYS.length === 0) {
 // CORS origins
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-    : ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3002'];
+    : [
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
+        'http://localhost:3002',
+        'https://ai-powered-tour.netlify.app',   // production frontend
+        'https://ai-powered-tour.onrender.com',  // self (Render)
+    ];
 
 module.exports = {
     PORT,
