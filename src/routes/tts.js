@@ -1,11 +1,13 @@
-// ─── Text-to-Speech Route (Groq Orpheus + Key Rotation + Browser Fallback) ──
+// ─── Text-to-Speech Route (msedge-tts Free API) ──
 const express = require('express');
 const router = express.Router();
-const Groq = require('groq-sdk');
-const groqKeyPool = require('../services/groqKeyPool');
+const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 
-// Available Orpheus voices: autumn, diana, hannah, austin, daniel, troy
-const DEFAULT_VOICE = 'autumn';
+// Create TTS instance
+const tts = new MsEdgeTTS();
+
+// Available Neural Voices from Edge TTS (Free, high-quality)
+const DEFAULT_VOICE = 'en-US-AriaNeural';
 
 // POST /api/tts — convert text to natural speech audio
 router.post('/tts', async (req, res) => {
@@ -18,71 +20,38 @@ router.post('/tts', async (req, res) => {
 
         const selectedVoice = voice || DEFAULT_VOICE;
 
-        // Try each key until one works
-        for (let attempt = 0; attempt < groqKeyPool.keys.length; attempt++) {
-            const keyEntry = groqKeyPool.getKey('tts');
+        // Set TTS voice
+        await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3, {});
 
-            if (!keyEntry) {
-                // All keys exhausted — tell frontend to use browser TTS
-                const status = groqKeyPool.getStatus();
-                console.log(`[TTS] ⚠️ All keys exhausted (${status.totals.ttsUsed}/${status.totals.ttsLimit}). Browser fallback.`);
-                return res.status(429).json({
-                    error: 'All TTS keys exhausted',
-                    fallback: 'browser',
-                    used: status.totals.ttsUsed,
-                    limit: status.totals.ttsLimit
-                });
+        // We want to pipe the MP3 stream directly to the response
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Transfer-Encoding', 'chunked');
+
+        // Stream the synthesized audio
+        const { audioStream } = tts.toStream(text);
+        
+        audioStream.on('data', (chunk) => {
+            res.write(chunk);
+        });
+
+        audioStream.on('end', () => {
+            res.end();
+        });
+
+        audioStream.on('error', (err) => {
+            console.error('[TTS] Error generating audio stream:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'TTS Generation failed' });
+            } else {
+                res.end();
             }
+        });
 
-            try {
-                const groq = new Groq({ apiKey: keyEntry.key });
-                console.log(`[TTS] Using ${keyEntry.label}`);
-
-                const response = await groq.audio.speech.create({
-                    model: 'canopylabs/orpheus-v1-english',
-                    input: text.trim(),
-                    voice: selectedVoice,
-                    response_format: 'wav'
-                });
-
-                const buffer = Buffer.from(await response.arrayBuffer());
-                groqKeyPool.recordUsage(keyEntry, 'tts');
-
-                res.set({
-                    'Content-Type': 'audio/wav',
-                    'Content-Length': buffer.length,
-                    'Cache-Control': 'no-cache'
-                });
-
-                res.send(buffer);
-
-                const status = groqKeyPool.getStatus();
-                console.log(`[TTS] ✅ ${buffer.length} bytes | voice: ${selectedVoice} | total: ${status.totals.ttsUsed}/${status.totals.ttsLimit}`);
-                return;
-
-            } catch (err) {
-                // Rate limit — cooldown and try next key
-                if (err.status === 429 || err.message?.includes('429') || err.message?.includes('rate_limit')) {
-                    groqKeyPool.handleRateLimit(keyEntry, 'tts');
-                    continue;
-                }
-                // Terms not accepted or model error — skip this key for TTS
-                if (err.status === 400 || err.message?.includes('model_terms_required')) {
-                    console.log(`[TTS] ${keyEntry.label} needs terms acceptance — skipping`);
-                    groqKeyPool.markExhausted(keyEntry, 'tts');
-                    continue;
-                }
-                throw err;
-            }
+    } catch (error) {
+        console.error('[TTS] Error processing request:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal server error' });
         }
-
-        // All keys failed
-        console.log('[TTS] ⚠️ All keys failed. Browser fallback.');
-        return res.status(429).json({ error: 'TTS failed', fallback: 'browser' });
-
-    } catch (err) {
-        console.error('[TTS] ❌ Error:', err.message);
-        res.status(500).json({ error: 'TTS failed', fallback: 'browser' });
     }
 });
 
