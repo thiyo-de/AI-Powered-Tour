@@ -3,14 +3,13 @@ const express = require('express');
 const router = express.Router();
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 
-// Create TTS instance
-const tts = new MsEdgeTTS();
-
 // Available Neural Voices from Edge TTS (Free, high-quality)
 const DEFAULT_VOICE = 'en-US-AriaNeural';
 
 // POST /api/tts — convert text to natural speech audio
 router.post('/tts', async (req, res) => {
+    // FIX B5: fresh instance per request — no shared WebSocket, no race conditions
+    const tts = new MsEdgeTTS();
     try {
         const { text, voice } = req.body;
 
