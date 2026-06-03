@@ -13,6 +13,7 @@ const _envOrigins = process.env.ALLOWED_ORIGINS
 const ALWAYS_ALLOWED = [
     'https://ai-powered-tour.netlify.app',
     'https://ai-powered-tour.onrender.com',
+    'https://uandi.media/Virtual-tour/Thiagarajar-College/index.htm',
 ];
 
 const ALLOWED_ORIGINS = [...new Set([..._envOrigins, ...ALWAYS_ALLOWED])];
