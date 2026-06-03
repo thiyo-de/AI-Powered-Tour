@@ -7,13 +7,13 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // CORS origins — env var supplements the hardcoded production hosts
 const _envOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-    : ['http://localhost:5500', 'http://127.0.0.1:5500', 'https://uandi.media/Virtual-tour/Thiagarajar-College/index.htm'];
+    : ['http://localhost:5500', 'http://127.0.0.1:5500', 'https://uandi.media'];
 
 // These are ALWAYS allowed
 const ALWAYS_ALLOWED = [
     'https://ai-powered-tour.netlify.app',
     'https://ai-powered-tour.onrender.com',
-    'https://uandi.media/Virtual-tour/Thiagarajar-College/index.htm',
+    'https://uandi.media',
 ];
 
 const ALLOWED_ORIGINS = [...new Set([..._envOrigins, ...ALWAYS_ALLOWED])];
