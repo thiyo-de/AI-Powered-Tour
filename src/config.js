@@ -13,7 +13,7 @@ const _envOrigins = process.env.ALLOWED_ORIGINS
 const ALWAYS_ALLOWED = [
     'https://ai-powered-tour.netlify.app',
     'https://ai-powered-tour.onrender.com',
-    'https://uandi.media',
+    'https://uandi.media','http://127.0.0.1:5528/'
 ];
 
 const ALLOWED_ORIGINS = [...new Set([..._envOrigins, ...ALWAYS_ALLOWED])];
