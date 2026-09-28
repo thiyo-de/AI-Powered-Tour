@@ -7,7 +7,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // CORS origins — env var supplements the hardcoded production hosts
 const _envOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-    : ['http://localhost:5500', 'http://127.0.0.1:5500', 'https://uandi.media', 'http://127.0.0.1:5529/index.htm'];
+    : ['http://localhost:5500', 'http://127.0.0.1:5500', 'https://uandi.media', 'http://127.0.0.1:5529/index.htm', 'http://127.0.0.1:5528/'];
 
 // These are ALWAYS allowed
 const ALWAYS_ALLOWED = [
